@@ -53,29 +53,6 @@ def add_frequency_into_variants_count(variants_count) :
 
 
 
-def look_ahead(log :list, C, R) : 
-    print("look_ahead run")
-    C_log = variants_filter.apply(log, C) 
-    net, im, fm = heuristics_miner.apply(C_log)
-    for i, r in enumerate(R) : 
-        if i%10 == 0 :
-            print("\t = {} dpi(s) checked".format(i))
-        r_log = variants_filter.apply(log, r) 
-        fit = replay_factory.apply(r_log, net, im, fm )
-
-        try : 
-            if fit['averageFitness'] == 1 : 
-                print("\tFound a perfect fitness - {}".format(r))
-                R.remove(r)
-                C.append(r)
-        except : 
-            print("******************[ERROR] _ look_ahead_fit['averageFitness'] does not exist, instead {}".format(fit))
-            continue
-    print("completed look_ahead()")
-    print("="*100)
-    return C, R
-
-
 def dist_btw_set(trace1,trace2, output=False) : 
     A = set(trace1)
     B = set(trace2)
@@ -114,18 +91,27 @@ def W_creater (log, R, w, output=False):
     log = variants_filter.apply(log,R)
     target_size = len(log) * w  #it determines the size of W 
     variant = case_statistics.get_variant_statistics(log)
-    if output : print("="*100, "\nW creater called with w : {} and target size {}\n".format(w, target_size), "="*100)
+    # variant = sorted(variant, key=lambda x: x['count'], reverse=True)
+    if output : print("="*100, "\nW creater called with w : {} and target size {}\n".format(w, target_size))
     W_size = 0
-    for v in variant :
-        if v['count'] + W_size < target_size :
-            W_size += v['count']
-            W.append(v['variant'])
-            if output : print("\t\t", v['variant'][:40], "is added", W_size, "out of", target_size)
+    for v in variant : 
+        W_size += v['count']
+        W.append(v['variant'])
+        if output : 
+            print(
+                "\t\t{}___added  // {} out of {}  // total size : {}".
+                format(v['variant'][:60], W_size, target_size, len(log))
+            )
+        
+        if W_size > target_size : 
+            break
+            
     if output : 
-        print("="*100)
-        print("W creater END\n")
+        print("W creater END")
         print("="*100)
     return W
+
+
 
 def min_distance_seeker(dpi, C) :
     import sys
@@ -157,66 +143,94 @@ def dpi_finder(C,W, output=False) :
         if sum_dist / len(C) < min_avg_dist : 
             min_avg_dist = sum_dist / len(C)
             cur_dpi = w
-            if output : print("\t UPDATED cur_dpi in the loop|",cur_dpi[:40], "\t",min_avg_dist)
+            if output : print("\tUPDATED cur_dpi in the loop|",cur_dpi[:40], "\t",min_avg_dist)
 
 
-    if output : print("\n\t cur_dpi :{} dist {}".format(cur_dpi[:40],min_avg_dist))
+    print("\n * Selected dpi via dpi_finder() :\n\t{}... with dist {}".format(cur_dpi[:60],min_avg_dist))
     return cur_dpi
 
 
-def clustering(C, I, R, log, mcs, tf, visual=False, output=False): 
-    print("===== Clustering() is called. min size of cluster {}===============".format(mcs * len(R)))
-    fit=1.0
-    
+
+
+def look_ahead(log :list, C, R) : 
+    print("\n * Look_ahead()")
+    C_log = variants_filter.apply(log, C) 
+    net, im, fm = heuristics_miner.apply(C_log)
+    for i, r in enumerate(R) : 
+        if i%10 == 0 :
+            print("\t = {} dpi(s) checked".format(i))
+        r_log = variants_filter.apply(log, r) 
+        fit = replay_factory.apply(r_log, net, im, fm )
+
+        try : 
+            if fit['averageFitness'] == 1 : 
+                print("\tFound a perfect fitness - {}".format(r))
+                R.remove(r)
+                C.append(r)
+        except : 
+            print("******************[ERROR] _ look_ahead_fit['averageFitness'] does not exist, instead {}".format(fit))
+            continue
+    return C, R
+
+
+
+def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False) : 
+    print("\nClustering() is called. mcs:{}, tf:{}, w:{}".format(mcs,tf,w))
     while (len(R)>0 and R != I) :  #line 8 
-        W = W_creater(log, list(set(R) - set(I)), 0.4)
-        print("\t to be searched in W \n \t\t{}".format(W))
+        print("-"*100)
+        print("START OF LOOP with cur_dpi")
+
+        if w : 
+            W = W_creater(log, list(set(R) - set(I)), w, output)
+        else : #if w is 0, frequency based selective search 
+            print("\n * As w is set 0, it searches the most frequent dpi from R_ActiTracC_freq")
+            W = [R[0]] #W is just a single dpi with the highest freuqency
         
         if (len(C) ==0 or len(W) == 1) : #if C is empty set
-            print("\n\nC is empty set. R[0] is to be added")
+            print("\n * C is empty set or |W| = 1. |C|:{}, |W|:{} ->  R[0] is to be added.\n".format(len(C), len(W)))
             cur_dpi = R[0] #R is already sorted in increasing order. 
-            if output : print("\tcur_dpi = R[0]", cur_dpi, "\n\n")
-            W.remove(cur_dpi) ###########################################################################33 checked ##############
+            if output : print("\tcur_dpi = R[0] {}...\n\n".format(cur_dpi[:40]))
         else :
-            print("\n\nC is not empty set, so w in W to be selected with min_dist")
+            print("\n * C is not empty set, so w in W to be selected with min_dist")
             cur_dpi = dpi_finder(C,W)
 
-        if output : print("\t\tcur_dpi : {}".formati(cur_dpi))
+        
+        print("\n * Fitness check to be done with cur_dpi\n\t {}...".format(cur_dpi[:80]))
+        
         fit = fit_check_w_HM(log, cur_dpi, C)
-        if fit > tf : 
-            print("[fit>tf] - current fitness {}, target fitness {}".format(fit,tf))
+        if fit >= tf : 
             R.remove(cur_dpi)
             C.append(cur_dpi) # added to C
-            print("\t\t Added the cur_dpi_ {}".format(cur_dpi))
+            print("\n * CASE of fit {} >= {} tf -> Cur_dpi is added to cluster C & removed from R\n\t" .format(fit,tf))
+            
             if visual : visualization(log, C)
-#             C = list(set(C)) # remove from R
-#             HM_Draw(log,C)
        
         else : # if fit < tf
-            print("[fit<tf] fitness is lower than the target fitness {} vs {}.".format(fit, tf) )
-            if len(C) > mcs * len(R) :
-                print("\tlook_ahead is called and this clustering is completed".format(fit, tf) )
+            print("\n * CASE of fit {} < {} tf -> fitness dropped than the tf".format(fit, tf) )
+            if len(C) >= mcs * len(R) :
                 print(
-                    "\t\tsize of C : {} / size of R {} / size of I{}\n\n"
-                    .format(len(C), len(R), len(I))
+                    "\t - CASE of |C| {} >= {} mcs * |R| -> look_ahead is called, then this clustering is completed".
+                    format( len(C), mcs * len(R)) 
                 )
                 C,R = look_ahead(log,C,R)
-                print("\t\t final version of cluster\n \t {}".format(C))
+                
+                print("\n * Clustering completed")
+                for c in C : 
+                    print("\t\t{}".format(c))
                 visualization(log, C)
-                return C,I,R
+                return C,R
+            
             else :
-                print("still it need more trace")
+                print("\t - CASE of |C|{} <= {} mcs*|R| -> still it need more trace, cur_dpi added to I and the loop continues ".format(len(C), mcs*len(R)))
                 I.append(cur_dpi)
          
-        print("-"*100)        
         print(
-            "END OF SINGLE LOOP ___ fitness : {} / size of C : {} / size of R {} / size of I{}"
+            "\nEND OF LOOP with cur_dpi____fit : {} / size of C: {} / size of R: {} / size of I: {}"
             .format(fit, len(C), len(R), len(I))
         )
-        print("-"*100)
-        print("\n\n\n")
+        print("\n")
         
-    return C,I,R
+    return C,R
 
 def visualization (log, C, petrinet=True, heu_net = False) :
     if petrinet : 
