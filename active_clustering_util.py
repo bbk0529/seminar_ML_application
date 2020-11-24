@@ -22,15 +22,18 @@ from pm4py.visualization.petrinet import visualizer as pn_visualizer
 from discover_mr import discover_maximal_repeat
 
 
-def read_xes(filename) : 
+def read_xes(filename, p=1) : 
     log = xes_import_factory.apply(filename)
+    log = variants_filter.filter_log_variants_percentage(log, percentage=p)
+    variants = variants_filter.get_variants(log)
+    variants_count= case_statistics.get_variant_statistics(log)
+    
 
     print(
         'length of trace', len(log),
-        '\nlength of event', sum(len(trace) for trace in log)
+        '\nlength of event', sum(len(trace) for trace in log),
+        '\nnumber of variants : {}'.format(len(variants))
     )
-    variants = variants_filter.get_variants(log)
-    variants_count= case_statistics.get_variant_statistics(log)
     
     return log, variants_count
 
