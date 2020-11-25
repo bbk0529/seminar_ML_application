@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
+from sklearn.cluster import KMeans
+warnings.filterwarnings("ignore")
 
 
 from pm4py.algo.discovery.heuristics import factory as heuristics_miner
@@ -20,6 +21,8 @@ from pm4py.visualization.petrinet import visualizer as pn_visualizer
 
 
 from discover_mr import discover_maximal_repeat
+from sklearn.cluster import KMeans
+import pandas as pd
 
 
 def read_xes(filename, p=1) : 
