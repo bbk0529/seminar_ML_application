@@ -1,8 +1,13 @@
 from pm4py.statistics.traces.log import case_statistics
-
-
-
 from discover_mr import discover_maximal_repeat
+from pm4py.algo.filtering.log.variants import variants_filter
+
+from clustering_util import *
+
+import importlib
+import clustering_util
+
+importlib.reload(clustering_util)
 
 def W_creater (log, R, w, output=False):
     

@@ -8,6 +8,94 @@ from pm4py.visualization.petrinet import factory as pn_vis_factory
 from pm4py.visualization.heuristics_net import factory as hn_vis_factory
 from pm4py.visualization.petrinet import visualizer as pn_visualizer
 
+import numpy as np
+from sklearn.cluster import KMeans
+from discover_mr import discover_maximal_repeat
+
+def mra_arr_generator(VARIANT) : 
+    mra_arr = []
+    for variant in VARIANT :
+        v = discover_maximal_repeat(variant.split(','))
+        mra_arr.append(v)
+    return mra_arr    
+
+def boa_arr_generator(VARIANT) : 
+    boa_arr=[]
+    for v in VARIANT :
+        activities = v.split(',')
+        boa_arr.append(activities)
+    return boa_arr
+
+def ngram_generator (arr, n) : 
+    ngram_arr=[]
+    for i in range(len(arr) - n +1 ) :
+        ar = arr[i:i+n]
+        ngram_arr.append(','.join(ar))
+    return ngram_arr    
+
+
+def ngram_arr_generator(VARIANT, n = 3) : 
+    ngram_arr=[]
+    for v in VARIANT :
+        ngram = ngram_generator(v.split(','),n)
+        ngram = list(set(ngram)) #to remove duplications
+        ngram_arr.append(ngram)
+    return ngram_arr
+
+
+def CS_creator(VARIANT, type=['ngram','boa','mra'], n=3, k=3):
+    if type=='ngram' : 
+        kmeans = kmean_launcher (VARIANT, type=type, n=n, k=k) 
+    elif type == 'boa' : 
+        kmeans = kmean_launcher(VARIANT, type=type) 
+    elif type == 'mra' : 
+        kmeans = kmean_launcher(VARIANT, type=type) 
+
+    VARIANT = np.array(VARIANT)
+    idx, cnt = np.unique(np.array(kmeans.labels_), return_counts=True)
+    CS=[]
+    for i in idx : 
+        CS.append(VARIANT[kmeans.labels_==i])
+    return CS
+
+
+
+def kmean_launcher (VARIANT, type=['ngram','boa','mra'], n = 3, k = 5) : 
+    print(type)
+    if type == 'boa' :
+        arr = boa_arr_generator(VARIANT)
+    elif type =='ngram' :
+        arr = ngram_arr_generator(VARIANT,n)
+    elif type =='mra' : 
+        arr = mra_arr_generator(VARIANT)
+
+    features = feature_extractor(arr)
+    feature_vectors = fecture_vectors_creator(arr, features)
+
+    data = np.array(feature_vectors)
+    kmeans = KMeans(n_clusters = k, random_state=0).fit(data)
+
+    return kmeans
+
+
+
+def fecture_vectors_creator (arr, features)  : 
+    feature_vectors = []
+    for a in arr : 
+        feature = [0] * len(features)
+        for n in a : 
+            feature[features.index(n)] = 1
+        feature_vectors.append(feature)
+    return feature_vectors
+
+
+def feature_extractor (arr) :
+    features = []
+    for g in arr : 
+        features += g
+    features=list(set(features))
+    return features
+
 
 def read_xes(filename, p=1) : 
     '''
@@ -102,20 +190,20 @@ def fit_check_w_HM(log :list, cur_dpi :list, C :list) -> float:
 
 
 
-def visualization_total(log, VARIANT, CS) :
+def visualization_total(log, VARIANT, CS, freq_check = False) :
     print("visualization of VARIANT") 
     visualization(log, VARIANT, True, False)
     
     print("visualization of each cluster in CS")
     for cs in CS : 
         print(len(cs))
-        print(fit_check(log, cs))
+        if freq_check : 
+            print(fit_check(log, cs))
         visualization(log, cs, True, False)
 
 
 
 def visualization (log, C, petrinet=True, heu_net = False) :
-        
     if petrinet : 
         net, im, fm = heuristics_miner.apply(variants_filter.apply(log, C))
         gviz = pn_vis_factory.apply(net, im, fm)

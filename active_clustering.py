@@ -1,9 +1,16 @@
 import warnings
 import numpy as np
 warnings.filterwarnings("ignore")
-import clustering_import
+from clustering_util import *
+from active_clustering_util import *
+
+import importlib
+
 import active_clustering_util
 import clustering_util
+importlib.reload(active_clustering_util)
+importlib.reload(clustering_util)
+
 
 def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False) : 
     print("\nClustering() is called. mcs:{}, tf:{}, w:{}".format(mcs,tf,w))
@@ -37,16 +44,21 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False) :
         if fit >= tf : 
             R.remove(cur_dpi)
             C.append(cur_dpi) # added to C
-            print("\n * CASE of fit {} >= {} tf -> Cur_dpi is added to cluster C & removed from R\n\t" .format(fit,tf))
+            print(
+                "\n * CASE of fit {} >= {} tf -> Cur_dpi is added to cluster C & removed from R\n\t" .
+                format(round(fit,2),tf)
+            )
             
             if visual : visualization(log, C)
        
         else : # if fit < tf
             print("\n * CASE of fit {} < {} tf -> fitness dropped than the tf".format(fit, tf) )
-            if len(C) >= mcs * len(R) :
+            C_size = len(variants_filter.apply (log, C))
+            R_size = len(variants_filter.apply (log, R))
+            if C_size >= mcs * R_size :
                 print(
                     "\t - CASE of |C| {} >= {} mcs * |R| -> look_ahead is called, then this clustering is completed".
-                    format( len(C), mcs * len(R)) 
+                    format(C_size, mcs * R_size) 
                 )
                 C,R = look_ahead(log,C,R)
                 
@@ -57,12 +69,15 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False) :
                 return C,R
             
             else :
-                print("\t - CASE of |C|{} <= {} mcs*|R| -> still it need more trace, cur_dpi added to I and the loop continues ".format(len(C), mcs*len(R)))
+                print(
+                    "\t - CASE of |C|{} <= {} mcs*|R| -> still it need more trace, cur_dpi added to I and the loop continues ".
+                    format(C_size, mcs * R_size)
+                )
                 I.append(cur_dpi)
                 I=list(set(I))
         print(
             "\nEND OF LOOP with cur_dpi____fit : {} / size of C: {} / size of R: {} / size of I: {}"
-            .format(fit, len(C), len(R), len(I))
+            .format(round(fit,2), len(C), len(R), len(I))
         )
         print("\n")
         
@@ -73,13 +88,10 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False) :
 
 
 def residual_trace_resolution (R, CS, log) : 
-
     print("STEP 3 : residual trace resolution ahead step start")
     #LOOK AHEAD STEPS
-
-
-    for r in R : 
-        print("\n{}".format(r))
+    for no, r in enumerate(R) : 
+        # print("\n{}".format(r))
         fit_max = 0
         fit_max_idx = -1
         for i in range(len(CS)) : 
@@ -88,22 +100,25 @@ def residual_trace_resolution (R, CS, log) :
             r_log = variants_filter.apply(log, r) 
             try : 
                 fit = replay_factory.apply(r_log, net, im, fm )['averageFitness']
-                print("\t", fit, r, CS[i])
+                # print("\t", fit, r, CS[i])
             except : 
-                print('avgfitness not exist')
+                # print('avgfitness not exist')
                 fit = 0
 
             if fit_max < fit : 
                 fit_max = fit
                 fit_max_idx=i
-        print("{} is added to {} cluster with fitness{}".format(r, fit_max_idx,fit_max))
+        print("{} out of {} is added to {} cluster with fitness{} : {}".format(no, len(R), fit_max_idx, round(fit_max,2), r))
         CS[i].append(r)
     return CS
 
-def active_clustering(
-    log, VARIANT,
-    w = 1,  tf = 0.99, nb_clus = 5, mcs = 0.25,
-    N = 1) :
+
+
+def A_clustering(
+        log, VARIANT,
+        w = 1,  tf = 0.99, nb_clus = 5, mcs = 0.25,
+        N = 1
+    ) :
     
     R=VARIANT.copy()
     CS=[]
@@ -121,7 +136,14 @@ def active_clustering(
         )
         CS.append(C)
 
-        print("COMPLETION OF SINGLE CLUSTERING\n")
+        R_size = len(variants_filter.apply(log, R))
+        log_size = len(log)
+        progress = 1 - round(R_size / log_size, 2)
+
+        print(
+            "COMPLETION OF SINGLE CLUSTERING {} been clustered ({} out of {})".
+            format(progress, R_size, log_size)
+        )
     print("COMPLETION OF WHOLE CLUSTERING\n")
 
     
