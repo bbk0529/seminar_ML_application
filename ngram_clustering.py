@@ -9,10 +9,10 @@ def ngram_generator (arr, n) :
     return ngram    
 
 
-def ngram_arr_generator(VARIANT) : 
+def ngram_arr_generator(VARIANT, n = 3) : 
     ngram_arr=[]
     for v in VARIANT :
-        ngram = ngram_generator(v.split(','),2)
+        ngram = ngram_generator(v.split(','),n)
         ngram = list(set(ngram)) #to remove duplications
         ngram_arr.append(ngram)
     return ngram_arr
@@ -36,13 +36,23 @@ def fecture_vectors_creator (ngram_arr, features)  :
 
 
 
-def ngram_kmean (VARIANT) : 
+def ngram_kmean (VARIANT, n = 3, k = 5) : 
 
-    ngram_arr = ngram_arr_generator(VARIANT)
+    ngram_arr = ngram_arr_generator(VARIANT, n)
     features = feature_extractor(ngram_arr)
     feature_vectors = fecture_vectors_creator (ngram_arr, features)
 
     data = np.array(feature_vectors)
-    kmeans = KMeans(n_clusters=5, random_state=0).fit(data)
+    kmeans = KMeans(n_clusters = k, random_state=0).fit(data)
 
     return kmeans
+
+def ngram_CS_creator(VARIANT, n = 3, k = 5):
+    kmeans = ngram_kmean(VARIANT, n, k)
+    
+    VARIANT = np.array(VARIANT)
+    idx, cnt = np.unique(np.array(kmeans.labels_), return_counts=True)
+    CS=[]
+    for i in idx : 
+        CS.append(VARIANT[kmeans.labels_==i])
+    return CS
