@@ -3,22 +3,17 @@ import numpy as np
 from sklearn.cluster import KMeans
 warnings.filterwarnings("ignore")
 
-
-from pm4py.algo.discovery.heuristics import factory as heuristics_miner
-from pm4py.evaluation.replay_fitness import factory as replay_factory
-
-
-from pm4py.algo.discovery.heuristics import factory as heuristics_miner
-from pm4py.evaluation.replay_fitness import factory as replay_factory
 from pm4py.objects.log.importer.xes import factory as xes_import_factory
-from pm4py.algo.filtering.log.variants import variants_filter
-from pm4py.statistics.traces.log import case_statistics
 
+from pm4py.algo.discovery.heuristics import factory as heuristics_miner
+from pm4py.algo.filtering.log.variants import variants_filter
+
+from pm4py.evaluation.replay_fitness import factory as replay_factory
+from pm4py.statistics.traces.log import case_statistics
 
 from pm4py.visualization.petrinet import factory as pn_vis_factory
 from pm4py.visualization.heuristics_net import factory as hn_vis_factory
 from pm4py.visualization.petrinet import visualizer as pn_visualizer
-
 
 from discover_mr import discover_maximal_repeat
 from sklearn.cluster import KMeans
@@ -26,19 +21,31 @@ import pandas as pd
 
 
 def read_xes(filename, p=1) : 
-    log = xes_import_factory.apply(filename)
-    log = variants_filter.filter_log_variants_percentage(log, percentage=p)
-    variants = variants_filter.get_variants(log)
-    variants_count= case_statistics.get_variant_statistics(log)
+    '''
+    read event log in xes format 
+        input   filename, percentage
+        output  log object, variants_count
     
+    filename = filename in xes format
+    p = percentage of traces % to exploit from the log
+    '''
 
-    print(
-        'length of trace', len(log),
-        '\nlength of event', sum(len(trace) for trace in log),
-        '\nnumber of variants : {}'.format(len(variants))
-    )
+    log = xes_import_factory.apply(filename)
+    log = variants_filter.filter_log_variants_percentage(log, percentage=p) 
+    variants = variants_filter.get_variants(log)
+    VARIANT = list(variants.keys())
+    # variants_count= case_statistics.get_variant_statistics(log)
     
-    return log, variants_count
+    # VARIANT = []
+    # for gl in variants_count: 
+    #     VARIANT.append(gl['variant'])
+
+    # print(
+    #     'length of trace', len(log),
+    #     '\nlength of event', sum(len(trace) for trace in log),
+    #     '\nnumber of variants : {}'.format(len(variants))
+    # )
+    return log, VARIANT
 
 
 def add_frequency_into_variants_count(variants_count) : 
@@ -253,3 +260,89 @@ def visualization (log, C, petrinet=True, heu_net = False) :
     #     parameters = {pn_visualizer.Variants.WO_DECORATION.value.Parameters.FORMAT: "jpg"}
     #     gviz = pn_visualizer.apply(net, parameters=parameters)
     #     pn_visualizer.save(gviz, filename + '.jpg')
+
+
+
+
+
+def fit_check(log :list, C :list) -> float: 
+    log = variants_filter.apply( # get the log containing variants in C 
+            log, 
+            [c for c in C]  
+    ) 
+    net, im, fm = heuristics_miner.apply(log)
+    fit = replay_factory.apply(log, net, im, fm )
+
+    try :
+        fit['averageFitness']  
+    
+    except : 
+        print("*************************[ERROR] look_ahead_fit['averageFitness'] does not exist, instead {}".format(fit))
+        return 0
+    
+    return fit['averageFitness']
+
+
+def residual_trace_resolution (R, CS, log) : 
+
+    print("STEP 3 : residual trace resolution ahead step start")
+    #LOOK AHEAD STEPS
+
+
+    for r in R : 
+        print("\n{}".format(r))
+        fit_max = 0
+        fit_max_idx = -1
+        for i in range(len(CS)) : 
+            C_log = variants_filter.apply(log, CS[i]) 
+            net, im, fm = heuristics_miner.apply(C_log)
+            r_log = variants_filter.apply(log, r) 
+            try : 
+                fit = replay_factory.apply(r_log, net, im, fm )['averageFitness']
+                print("\t", fit, r, CS[i])
+            except : 
+                print('avgfitness not exist')
+                fit = 0
+
+            if fit_max < fit : 
+                fit_max = fit
+                fit_max_idx=i
+        print("{} is added to {} cluster with fitness{}".format(r, fit_max_idx,fit_max))
+        CS[i].append(r)
+    return CS
+
+def active_clustering(
+    log, VARIANT,
+    w = 1,  tf = 0.99, nb_clus = 5, mcs = 0.25,
+    N = 1) :
+    
+    R=VARIANT.copy()
+    C=[]
+    I=[]
+    CS=[]
+
+    for i in range(nb_clus-N) : 
+        print("*"*100)
+        print("START OF No. {} CLUSTERING\n".format(i))
+        C = []
+        I = []
+        C, R = clustering(
+            C, I, R, 
+            log, mcs, tf, w, 
+            visual=False, 
+            output=False
+        )
+        CS.append(C)
+
+        print("COMPLETION OF SINGLE CLUSTERING\n")
+    print("COMPLETION OF WHOLE CLUSTERING\n")
+
+    
+    if N : 
+        print("STEP 3_ since N = 1, all the remaining traces are collected into new single cluster")
+        CS.append(R)
+    else :
+        print("STEP 3_ since N = 0, all the remaining traces are moved to the most suitable clusters")
+        CS = residual_trace_resolution(R, CS, log)
+    return CS
+
