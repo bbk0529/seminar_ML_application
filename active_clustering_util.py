@@ -1,6 +1,8 @@
 from pm4py.statistics.traces.log import case_statistics
 from discover_mr import discover_maximal_repeat
 from pm4py.algo.filtering.log.variants import variants_filter
+from pm4py.evaluation.replay_fitness import evaluator as replay_fitness_evaluator
+
 
 from clustering_util import *
 
@@ -77,16 +79,13 @@ def look_ahead(log :list, C, R) :
         if i%10 == 0 :
             print("\t = {} dpi(s) checked".format(i))
         r_log = variants_filter.apply(log, r) 
-        fit = replay_factory.apply(r_log, net, im, fm )
+        fit = replay_fitness_evaluator.apply(r_log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)
 
-        try : 
-            if fit['averageFitness'] == 1 : 
-                print("\tFound a perfect fitness - {}".format(r))
-                R.remove(r)
-                C.append(r)
-        except : 
-            print("******************[ERROR] _ look_ahead_fit['averageFitness'] does not exist, instead {}".format(fit))
-            continue
+        
+        if fit == 1 : 
+            print("\tFound a perfect fitness - {}".format(r))
+            R.remove(r)
+            C.append(r)
     return C, R
 
 

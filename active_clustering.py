@@ -8,6 +8,8 @@ import importlib
 
 import active_clustering_util
 import clustering_util
+from pm4py.evaluation.replay_fitness import evaluator as replay_fitness_evaluator
+
 importlib.reload(active_clustering_util)
 importlib.reload(clustering_util)
 
@@ -16,7 +18,7 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False) :
     print("\nClustering() is called. mcs:{}, tf:{}, w:{}".format(mcs,tf,w))
     while (len(R)>0 and set(R) != set(I)) :  #line 8 
         print("-"*100)
-        print("START OF LOOP with cur_dpi // R and I comparision : {}".format(set(R) == set(I)))
+        print("START OF LOOP with cur_dpi")
 
         if w : 
             W = W_creater(log, list(set(R) - set(I)), w, output)
@@ -38,8 +40,10 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False) :
             cur_dpi = dpi_finder(C,W)
 
         if output : print("\tcur_dpi = R[0] {}...\n\n".format(cur_dpi[:40]))
-        print("\n * Fitness check to be done with cur_dpi\n\t {}...".format(cur_dpi[:80]))
+        # print("\n * Fitness check to be done with cur_dpi\n\t {}...".format(cur_dpi[:80]))
+        print("\n * Fitness check to be done with cur_dpi\n\t {}...".format(cur_dpi))
         
+
         fit = fit_check_w_HM(log, cur_dpi, C)
         if fit >= tf : 
             R.remove(cur_dpi)
@@ -55,6 +59,7 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False) :
             print("\n * CASE of fit {} < {} tf -> fitness dropped than the tf".format(fit, tf) )
             C_size = len(variants_filter.apply (log, C))
             R_size = len(variants_filter.apply (log, R))
+            
             if C_size >= mcs * R_size :
                 print(
                     "\t - CASE of |C| {} >= {} mcs * |R| -> look_ahead is called, then this clustering is completed".
@@ -98,13 +103,7 @@ def residual_trace_resolution (R, CS, log) :
             C_log = variants_filter.apply(log, CS[i]) 
             net, im, fm = heuristics_miner.apply(C_log)
             r_log = variants_filter.apply(log, r) 
-            try : 
-                fit = replay_factory.apply(r_log, net, im, fm )['averageFitness']
-                # print("\t", fit, r, CS[i])
-            except : 
-                # print('avgfitness not exist')
-                fit = 0
-
+            fit = replay_fitness_evaluator.apply(r_log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)['log_fitness']
             if fit_max < fit : 
                 fit_max = fit
                 fit_max_idx=i
@@ -141,8 +140,8 @@ def A_clustering(
         progress = 1 - round(R_size / log_size, 2)
 
         print(
-            "COMPLETION OF SINGLE CLUSTERING {} been clustered ({} out of {})".
-            format(progress, R_size, log_size)
+            "COMPLETION OF SINGLE CLUSTERING {} been clustered ({} out of {}) // Remaining # traces {}".
+            format(progress, log_size - R_size, log_size, len(R))
         )
     print("COMPLETION OF WHOLE CLUSTERING\n")
 

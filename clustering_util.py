@@ -1,12 +1,11 @@
-
-from pm4py.objects.log.importer.xes import factory as xes_import_factory
+from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.algo.filtering.log.variants import variants_filter
-from pm4py.algo.discovery.heuristics import factory as heuristics_miner
-from pm4py.evaluation.replay_fitness import factory as replay_factory
-
-from pm4py.visualization.petrinet import factory as pn_vis_factory
-from pm4py.visualization.heuristics_net import factory as hn_vis_factory
+from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 from pm4py.visualization.petrinet import visualizer as pn_visualizer
+from pm4py.algo.conformance.tokenreplay import algorithm as token_replay
+from pm4py.evaluation.replay_fitness import evaluator as replay_fitness_evaluator
+
+
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -44,12 +43,7 @@ def ngram_arr_generator(VARIANT, n = 3) :
 
 
 def CS_creator(VARIANT, type=['ngram','boa','mra'], n=3, k=3):
-    if type=='ngram' : 
-        kmeans = kmean_launcher (VARIANT, type=type, n=n, k=k) 
-    elif type == 'boa' : 
-        kmeans = kmean_launcher(VARIANT, type=type) 
-    elif type == 'mra' : 
-        kmeans = kmean_launcher(VARIANT, type=type) 
+    kmeans = kmean_launcher(VARIANT, type=type,  n=n, k=k) 
 
     VARIANT = np.array(VARIANT)
     idx, cnt = np.unique(np.array(kmeans.labels_), return_counts=True)
@@ -106,8 +100,7 @@ def read_xes(filename, p=1) :
     filename = filename in xes format
     p = percentage of traces % to exploit from the log
     '''
-
-    log = xes_import_factory.apply(filename)
+    log = xes_importer.apply(filename)
     log = variants_filter.filter_log_variants_percentage(log, percentage=p) 
     variants = variants_filter.get_variants(log)
     VARIANT = list(variants.keys())
@@ -125,16 +118,10 @@ def fit_check(log :list, C :list) -> float:
             [c for c in C]  
     ) 
     net, im, fm = heuristics_miner.apply(log)
-    fit = replay_factory.apply(log, net, im, fm )
+    fit = replay_fitness_evaluator.apply(log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)
+    return fit['log_fitness']
 
-    try :
-        fit['averageFitness']  
-    
-    except : 
-        print("*************************[ERROR] look_ahead_fit['averageFitness'] does not exist, instead {}".format(fit))
-        return 0
-    
-    return fit['averageFitness']
+
 
 
 def add_frequency_into_variants_count(variants_count) : 
@@ -175,30 +162,30 @@ def fit_check_w_HM(log :list, cur_dpi :list, C :list) -> float:
             [c for c in C + [cur_dpi]]  
     ) 
     net, im, fm = heuristics_miner.apply(log)
-    fit = replay_factory.apply(log, net, im, fm )
+    fit = replay_fitness_evaluator.apply(log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)
+    # print(fit)
 
-    try :
-        fit['averageFitness']  
+    return fit['log_fitness']
     
-    except : 
-        print("*************************[ERROR] look_ahead_fit['averageFitness'] does not exist, instead {}".format(fit))
-        return 0
-    
-    return fit['averageFitness']
-
-
-
-
-
 def visualization_total(log, VARIANT, CS, freq_check = False) :
     print("visualization of VARIANT") 
+    if freq_check : 
+        fitness = fit_check(log, VARIANT)
+        print(
+            "#variants:{} / #traces:{} / fitness{}".
+            format(len(VARIANT), len(log), fitness)
+            )
     visualization(log, VARIANT, True, False)
     
     print("visualization of each cluster in CS")
     for cs in CS : 
-        print(len(cs))
         if freq_check : 
-            print(fit_check(log, cs))
+            cs_log = variants_filter.apply(log, cs)
+            fitness = fit_check(cs_log, cs)
+            print(
+                "#variants:{} / #traces:{} / fitness{}".
+                format(len(cs), len(cs_log), fitness)
+                )
         visualization(log, cs, True, False)
 
 
@@ -206,8 +193,8 @@ def visualization_total(log, VARIANT, CS, freq_check = False) :
 def visualization (log, C, petrinet=True, heu_net = False) :
     if petrinet : 
         net, im, fm = heuristics_miner.apply(variants_filter.apply(log, C))
-        gviz = pn_vis_factory.apply(net, im, fm)
-        pn_vis_factory.view(gviz)
+        gviz = pn_visualizer.apply(net, im, fm)
+        pn_visualizer.view(gviz)
 
     if heu_net :
         heu_net = heuristics_miner.apply_heu(variants_filter.apply(log, C))
