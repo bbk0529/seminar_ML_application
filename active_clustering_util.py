@@ -25,18 +25,19 @@ def W_creater(log, R, w, output=False):
     for v in variant:
         W_size += v['count']
         W.append(v['variant'])
-        # if output:
-        #     print(
-        #         "\t\t{}___added  // {} out of {}  // total size : {}".
-        #         format(v['variant'][:60], W_size, target_size, len(log))
-        #     )
+        if output:
+            print(
+                "\t\t{}___added with size {} // {} out of {}  // total size : {}".
+                format(v['variant'][:60], v['count'],
+                       W_size, target_size, len(log))
+            )
 
         if W_size > target_size:
             break
 
-    # if output:
-    #     print("W creater END")
-    #     print("="*100)
+    if output:
+        print("W creater END with its size: {}".format(len(W)))
+        print("="*100)
     return W
 
 
@@ -58,8 +59,10 @@ def dpi_finder(C, W, output=False):
 
         for c in C:
             c_mr = discover_maximal_repeat(c.split(','))
-            # if output:
-            #     print("\t maximal repeat in w:{} c:{} ".format(w_mr, c_mr))
+            if output:
+                print("\t original w:{} c:{} ".format(w, c))
+                print(
+                    "\t\t correspnding maximal repeat in w:{} c:{} ".format(w_mr, c_mr))
             sum_dist += dist_btw_set(w_mr, c_mr)
 
         if sum_dist / len(C) < min_avg_dist:

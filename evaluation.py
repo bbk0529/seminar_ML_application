@@ -52,7 +52,7 @@ def quality_measure(log, CS):
     for cs in CS:
         l = variants_filter.apply(log, cs)
         eval.append(evaluation_w_hm(l))
-
+    print(eval)
     DATA = np.array(eval)
     metrics = []
     for i in range(1, DATA.shape[1]):
@@ -63,7 +63,7 @@ def quality_measure(log, CS):
         )
     print(
         "fitness:{}, prec:{}, gen:{}, simp:{}, weighted by # traces".
-        format(metrics[0], metrics[1], metrics[2], metrics[2])
+        format(metrics[0], metrics[1], metrics[2], metrics[3])
     )
     return metrics
 
@@ -96,20 +96,27 @@ def total_evaluation():
     return result
 
 
-def total_clustering(filename, k, output=False, visual=False):
+def total_clustering(
+    filename, k, output=False, visual=False,
+    w=1,  tf=0.99, mcs=0.25,
+    N=1,
+    p=1
+):
     # file name are hard-coded here. to be soft coded if required.
-    log, VARIANT = read_xes(filename, 1)
+    log, VARIANT = read_xes(filename, p=p)
     pickle.dump(log, open('log.p', 'wb'))
     pickle.dump(VARIANT, open('VARIANT.p', 'wb'))
     if output:
         print("* active clustering started, it may take some time to finish. to see the progress, please use output = True")
+
     CS_act = A_clustering(
         log, VARIANT,
-        w=1,  tf=1, nb_clus=k, mcs=0.5,
-        N=0,
+        w=w,  tf=tf, nb_clus=k, mcs=mcs,
+        N=N,
         output=output,
         visual=visual
     )
+
     if output:
         print("* active clustering finished")
 

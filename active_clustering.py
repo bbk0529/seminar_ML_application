@@ -55,7 +55,14 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
         if output:
             print("\n * Fitness check to be done with cur_dpi\n\t {}...".format(cur_dpi))
 
-        fit = fit_check_w_HM(log, cur_dpi, C)
+        if len(C) == 0:  # there was a situation that fitness of
+            fit = 1
+            if output:
+                print(
+                    "\n * size of C is 0, fitness check is skipped and cur_dpi is added to C")
+        else:
+            fit = fit_check_w_HM(log, cur_dpi, C)
+
         if fit >= tf:
             R.remove(cur_dpi)
             C.append(cur_dpi)  # added to C
@@ -104,8 +111,11 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
             print(
                 "\nEND OF LOOP with cur_dpi____fit : {} / size of C: {} / size of R: {} / size of I: {}"
                 .format(round(fit, 2), len(C), len(R), len(I))
+
             )
-        if output:
+            print("* dpi(s) in C\n {}".format(C))
+            print("* dpi(s) in I\n {}".format(I))
+            print("* remainig dpi(s) in R\n {}".format(R))
             print("\n")
 
     return C, R
@@ -121,8 +131,8 @@ def residual_trace_resolution(R, CS, log, output=False):
         fit_max_idx = -1
         for i in range(len(CS)):
             C_log = variants_filter.apply(log, CS[i])
-            net, im, fm = heuristics_miner.apply(C_log)
             r_log = variants_filter.apply(log, r)
+            net, im, fm = heuristics_miner.apply(C_log)
             fit = replay_fitness_evaluator.apply(
                 r_log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)['log_fitness']
             if fit_max < fit:
@@ -143,10 +153,8 @@ def A_clustering(
     visual=False
 
 ):
-
     R = VARIANT.copy()
     CS = []
-
     for i in range(nb_clus-N):
         if output:
             print("*"*100)
@@ -171,6 +179,10 @@ def A_clustering(
                 "COMPLETION OF SINGLE CLUSTERING {} been clustered ({} out of {}) // Remaining # traces {}".
                 format(progress, log_size - R_size, log_size, len(R))
             )
+            print("* dpi(s) in C\n {}".format(C))
+            print("* dpi(s) in I\n {}".format(I))
+            print("* remainig dpi(s) in R\n {}\n\n\n\n".format(R))
+
     if output:
         print("COMPLETION OF WHOLE CLUSTERING\n")
 
@@ -183,5 +195,5 @@ def A_clustering(
         if output:
             print(
                 "STEP 3_ since N = 0, all the remaining traces are moved to the most suitable clusters")
-        CS = residual_trace_resolution(R, CS, log)
+        CS = residual_trace_resolution(R, CS, log, output=output)
     return CS

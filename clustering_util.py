@@ -95,7 +95,7 @@ def feature_extractor(arr):
     return features
 
 
-def read_xes(filename, p=1):
+def read_xes(filename, p=1, n_DPI=False):
     '''
     read event log in xes format 
         input   filename, percentage
@@ -105,14 +105,18 @@ def read_xes(filename, p=1):
     p = percentage of traces % to exploit from the log
     '''
     log = xes_importer.apply(filename)
-    log = variants_filter.filter_log_variants_percentage(log, percentage=p)
+    if p < 1:
+        log = variants_filter.filter_log_variants_percentage(log, percentage=p)
     variants = variants_filter.get_variants(log)
     VARIANT = list(variants.keys())
 
+    if n_DPI:
+        VARIANT = VARIANT[:n_DPI]
+        log = variants_filter.apply(log, VARIANT)
     print(
         '='*100,
         '=READ THE XES FILE'
-        'length of trace', len(log),
+        'length of log', len(log),
         '\nlength of event', sum(len(trace) for trace in log),
         '\nnumber of variants : {}'.format(len(VARIANT))
 
