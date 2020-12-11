@@ -1,7 +1,9 @@
 from pm4py.statistics.traces.log import case_statistics
 from discover_mr import discover_maximal_repeat
 from pm4py.algo.filtering.log.variants import variants_filter
+
 from pm4py.evaluation.replay_fitness import evaluator as replay_fitness_evaluator
+from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 
 
 from clustering_util import *
@@ -82,7 +84,7 @@ def look_ahead(log: list, C, R, output=False):
     if output:
         print("\n * Look_ahead()")
     C_log = variants_filter.apply(log, C)
-    net, im, fm = heuristics_miner.apply(C_log)
+    net, im, fm = inductive_miner.apply(C_log)
     for i, r in enumerate(R):
         if i % 10 == 0:
             if output:

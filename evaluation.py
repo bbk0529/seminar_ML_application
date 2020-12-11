@@ -7,6 +7,7 @@ from pm4py.evaluation.precision import evaluator as precision_evaluator
 from pm4py.evaluation.generalization import evaluator as generalization_evaluator
 from pm4py.evaluation.simplicity import evaluator as simplicity_evaluator
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
+from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 
 
 import matplotlib
@@ -52,8 +53,9 @@ def quality_measure(log, CS):
     for cs in CS:
         l = variants_filter.apply(log, cs)
         eval.append(evaluation_w_hm(l))
-    print(eval)
+
     DATA = np.array(eval)
+    print(DATA)
     metrics = []
     for i in range(1, DATA.shape[1]):
         metrics.append(
@@ -69,7 +71,7 @@ def quality_measure(log, CS):
 
 
 def evaluation_w_hm(log):
-    net, im, fm = heuristics_miner.apply(log)
+    net, im, fm = inductive_miner.apply(log)
 
     fitness = replay_fitness_evaluator.apply(
         log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)['log_fitness']
