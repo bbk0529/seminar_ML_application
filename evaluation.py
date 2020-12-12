@@ -71,7 +71,10 @@ def quality_measure(log, CS):
 
 
 def evaluation_w_hm(log):
-    net, im, fm = inductive_miner.apply(log)
+    print("evaluation_w_hm() called")
+    net, im, fm = heuristics_miner.apply(log)
+
+    # net, im, fm = inductive_miner.apply(log)
 
     fitness = replay_fitness_evaluator.apply(
         log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)['log_fitness']
@@ -99,15 +102,16 @@ def total_evaluation():
 
 
 def total_clustering(
-    filename, k, output=False, visual=False,
+    log, VARIANT, k,
+    output=False, visual=False,
     w=1,  tf=0.99, mcs=0.25,
     N=1,
     p=1
 ):
     # file name are hard-coded here. to be soft coded if required.
-    log, VARIANT = read_xes(filename, p=p)
-    pickle.dump(log, open('log.p', 'wb'))
-    pickle.dump(VARIANT, open('VARIANT.p', 'wb'))
+    # log, VARIANT = read_xes(filename, p=p)
+    # pickle.dump(log, open('log.p', 'wb'))
+    # pickle.dump(VARIANT, open('VARIANT.p', 'wb'))
     if output:
         print("* active clustering started, it may take some time to finish. to see the progress, please use output = True")
 

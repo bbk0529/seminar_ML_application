@@ -1,6 +1,8 @@
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.algo.filtering.log.variants import variants_filter
 from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
+from pm4py.algo.discovery.inductive import algorithm as inductive_miner
+
 from pm4py.visualization.petrinet import visualizer as pn_visualizer
 from pm4py.algo.conformance.tokenreplay import algorithm as token_replay
 from pm4py.evaluation.replay_fitness import evaluator as replay_fitness_evaluator
@@ -115,7 +117,7 @@ def read_xes(filename, p=1, n_DPI=False):
         log = variants_filter.apply(log, VARIANT)
     print(
         '='*100,
-        '=READ THE XES FILE'
+        '\n=READ THE XES FILE'
         'length of log', len(log),
         '\nlength of event', sum(len(trace) for trace in log),
         '\nnumber of variants : {}'.format(len(VARIANT))
@@ -130,6 +132,8 @@ def fit_check(log: list, C: list) -> float:
         [c for c in C]
     )
     net, im, fm = heuristics_miner.apply(log)
+    # net, im, fm = inductive_miner.apply(log)
+
     fit = replay_fitness_evaluator.apply(
         log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)
     return fit['log_fitness']
@@ -170,6 +174,7 @@ def fit_check_w_HM(log: list, cur_dpi: list, C: list) -> float:
         [c for c in C + [cur_dpi]]
     )
     net, im, fm = heuristics_miner.apply(log)
+    # net, im, fm = inductive_miner.apply(log)
     fit = replay_fitness_evaluator.apply(
         log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)
     # print(fit)
@@ -201,12 +206,13 @@ def visualization_total(log, VARIANT, CS, freq_check=False):
 
 def visualization(log, C, petrinet=True, heu_net=False):
     if petrinet:
+        # net, im, fm = inductive_miner.apply(variants_filter.apply(log, C))
         net, im, fm = heuristics_miner.apply(variants_filter.apply(log, C))
         gviz = pn_visualizer.apply(net, im, fm)
         pn_visualizer.view(gviz)
 
     if heu_net:
-        heu_net = heuristics_miner.apply_heu(variants_filter.apply(log, C))
+        heu_net = inductive_miner.apply_heu(variants_filter.apply(log, C))
         gviz = hn_vis_factory.apply(heu_net)
         hn_vis_factory.view(gviz)
 

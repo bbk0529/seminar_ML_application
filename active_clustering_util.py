@@ -4,7 +4,7 @@ from pm4py.algo.filtering.log.variants import variants_filter
 
 from pm4py.evaluation.replay_fitness import evaluator as replay_fitness_evaluator
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
-
+from pm4py.algo.discovery.heuristics import algorithm as heuristics_miner
 
 from clustering_util import *
 
@@ -27,12 +27,12 @@ def W_creater(log, R, w, output=False):
     for v in variant:
         W_size += v['count']
         W.append(v['variant'])
-        if output:
-            print(
-                "\t\t{}___added with size {} // {} out of {}  // total size : {}".
-                format(v['variant'][:60], v['count'],
-                       W_size, target_size, len(log))
-            )
+        # if output:
+        #     print(
+        #         "\t\t{}___added with size {} // {} out of {}  // total size : {}".
+        #         format(v['variant'][:60], v['count'],
+        #                W_size, target_size, len(log))
+        #     )
 
         if W_size > target_size:
             break
@@ -61,10 +61,10 @@ def dpi_finder(C, W, output=False):
 
         for c in C:
             c_mr = discover_maximal_repeat(c.split(','))
-            if output:
-                print("\t original w:{} c:{} ".format(w, c))
-                print(
-                    "\t\t correspnding maximal repeat in w:{} c:{} ".format(w_mr, c_mr))
+            # if output:
+            #     print("\t original w:{} c:{} ".format(w, c))
+            #     print(
+            #         "\t\t correspnding maximal repeat in w:{} c:{} ".format(w_mr, c_mr))
             sum_dist += dist_btw_set(w_mr, c_mr)
 
         if sum_dist / len(C) < min_avg_dist:
@@ -84,7 +84,8 @@ def look_ahead(log: list, C, R, output=False):
     if output:
         print("\n * Look_ahead()")
     C_log = variants_filter.apply(log, C)
-    net, im, fm = inductive_miner.apply(C_log)
+    net, im, fm = heuristics_miner.apply(C_log)
+    # net, im, fm = inductive_miner.apply(C_log)
     for i, r in enumerate(R):
         if i % 10 == 0:
             if output:

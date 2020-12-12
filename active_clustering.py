@@ -81,7 +81,6 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
                     "\n * CASE of fit {} < {} tf -> fitness dropped than the tf".format(fit, tf))
             C_size = len(variants_filter.apply(log, C))
             R_size = len(variants_filter.apply(log, R))
-
             if C_size >= mcs * R_size:
                 if output:
                     print(
@@ -113,9 +112,9 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
                 .format(round(fit, 2), len(C), len(R), len(I))
 
             )
-            print("* dpi(s) in C\n {}".format(C))
-            print("* dpi(s) in I\n {}".format(I))
-            print("* remainig dpi(s) in R\n {}".format(R))
+            # print("* dpi(s) in C\n {}".format(C))
+            # print("* dpi(s) in I\n {}".format(I))
+            # print("* remainig dpi(s) in R\n {}".format(R))
             print("\n")
 
     return C, R
@@ -133,6 +132,8 @@ def residual_trace_resolution(R, CS, log, output=False):
             C_log = variants_filter.apply(log, CS[i])
             r_log = variants_filter.apply(log, r)
             net, im, fm = heuristics_miner.apply(C_log)
+            # net, im, fm = inductive_miner.apply(C_log)
+
             fit = replay_fitness_evaluator.apply(
                 r_log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)['log_fitness']
             if fit_max < fit:
@@ -179,9 +180,9 @@ def A_clustering(
                 "COMPLETION OF SINGLE CLUSTERING {} been clustered ({} out of {}) // Remaining # traces {}".
                 format(progress, log_size - R_size, log_size, len(R))
             )
-            print("* dpi(s) in C\n {}".format(C))
-            print("* dpi(s) in I\n {}".format(I))
-            print("* remainig dpi(s) in R\n {}\n\n\n\n".format(R))
+            # print("* dpi(s) in C\n {}".format(C))
+            # print("* dpi(s) in I\n {}".format(I))
+            # print("* remainig dpi(s) in R\n {}\n\n\n\n".format(R))
 
     if output:
         print("COMPLETION OF WHOLE CLUSTERING\n")
