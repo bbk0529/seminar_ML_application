@@ -6,23 +6,26 @@ from active_clustering_util import *
 from clustering_util import *
 import warnings
 import numpy as np
+import logging
 warnings.filterwarnings("ignore")
 
 
 importlib.reload(active_clustering_util)
 importlib.reload(clustering_util)
 
+logging.basicConfig(filename='example.log', level=logging.DEBUG)
+
 
 def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
+    loop = 1
     if output:
         if output:
             print("\nClustering() is called. mcs:{}, tf:{}, w:{}".format(mcs, tf, w))
     while (len(R) > 0 and set(R) != set(I)):  # line 8
         if output:
             print("-"*100)
-        if output:
-            print("START OF LOOP with cur_dpi")
-
+            print("START OF {}th LOOP with cur_dpi".format(loop))
+        loop += 1
         if w:
             W = W_creater(log, list(set(R) - set(I)), w, output)
         else:  # if w is 0, frequency based selective search
@@ -112,9 +115,9 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
                 .format(round(fit, 2), len(C), len(R), len(I))
 
             )
-            # print("* dpi(s) in C\n {}".format(C))
-            # print("* dpi(s) in I\n {}".format(I))
-            # print("* remainig dpi(s) in R\n {}".format(R))
+            print("* dpi(s) in C\n {}".format(C))
+            print("* dpi(s) in I\n {}".format(I))
+            print("* remainig dpi(s) in R\n {}".format(R))
             print("\n")
 
     return C, R
@@ -158,9 +161,9 @@ def A_clustering(
     CS = []
     for i in range(nb_clus-N):
         if output:
-            print("*"*100)
+            print("#"*100)
         if output:
-            print("START OF No. {} CLUSTERING\n".format(i))
+            print("START OF No. {} CLUSTERING\n".format(i+1))
         C = []
         I = []
         C, R = clustering(
@@ -180,9 +183,9 @@ def A_clustering(
                 "COMPLETION OF SINGLE CLUSTERING {} been clustered ({} out of {}) // Remaining # traces {}".
                 format(progress, log_size - R_size, log_size, len(R))
             )
-            # print("* dpi(s) in C\n {}".format(C))
-            # print("* dpi(s) in I\n {}".format(I))
-            # print("* remainig dpi(s) in R\n {}\n\n\n\n".format(R))
+            print("* dpi(s) in C\n {}".format(C))
+            print("* dpi(s) in I\n {}".format(I))
+            print("* remainig dpi(s) in R\n {}\n\n\n\n".format(R))
 
     if output:
         print("COMPLETION OF WHOLE CLUSTERING\n")
