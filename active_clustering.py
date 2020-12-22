@@ -18,13 +18,11 @@ logging.basicConfig(filename='example.log', level=logging.DEBUG)
 
 def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
     loop = 1
-    if output:
-        if output:
-            print("\nClustering() is called. mcs:{}, tf:{}, w:{}".format(mcs, tf, w))
+    print("\nClustering() is called. mcs:{}, tf:{}, w:{}".format(mcs, tf, w))
     while (len(R) > 0 and set(R) != set(I)):  # line 8
-        if output:
-            print("-"*100)
-            print("START OF {}th LOOP with cur_dpi".format(loop))
+        print("*"*100)
+        print("START OF {}th LOOP with cur_dpi".format(loop))
+
         loop += 1
         if w:
             W = W_creater(log, list(set(R) - set(I)), w, output)
@@ -109,12 +107,13 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
                     )
                 I.append(cur_dpi)
                 I = list(set(I))
-        if output:
-            print(
-                "\nEND OF LOOP with cur_dpi____fit : {} / size of C: {} / size of R: {} / size of I: {}"
-                .format(round(fit, 2), len(C), len(R), len(I))
+        print(
+            "\nEND OF LOOP with cur_dpi____fit : {} / size of C: {} / size of R: {} / size of I: {}"
+            .format(round(fit, 2), len(C), len(R), len(I))
 
-            )
+        )
+        if output:
+
             print("* dpi(s) in C\n {}".format(C))
             print("* dpi(s) in I\n {}".format(I))
             print("* remainig dpi(s) in R\n {}".format(R))
@@ -124,8 +123,7 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
 
 
 def residual_trace_resolution(R, CS, log, output=False):
-    if output:
-        print("STEP 3 : residual trace resolution ahead step start")
+    print("STEP 3 : residual trace resolution ahead step start")
     # LOOK AHEAD STEPS
     for no, r in enumerate(R):
         # print("\n{}".format(r))
@@ -142,9 +140,8 @@ def residual_trace_resolution(R, CS, log, output=False):
             if fit_max < fit:
                 fit_max = fit
                 fit_max_idx = i
-        if output:
-            print("{} out of {} is added to {} cluster with fitness{} : {}".format(
-                no, len(R), fit_max_idx, round(fit_max, 2), r))
+        print("{} out of {} is added to {} cluster with fitness{} : {}".format(
+            no, len(R), fit_max_idx, round(fit_max, 2), r))
         CS[i].append(r)
     return CS
 
@@ -160,10 +157,8 @@ def A_clustering(
     R = VARIANT.copy()
     CS = []
     for i in range(nb_clus-N):
-        if output:
-            print("#"*100)
-        if output:
-            print("START OF No. {} CLUSTERING\n".format(i+1))
+        print("#"*100)
+        print("START OF No. {} CLUSTERING\n".format(i+1))
         C = []
         I = []
         C, R = clustering(
@@ -178,26 +173,24 @@ def A_clustering(
         log_size = len(log)
         progress = 1 - round(R_size / log_size, 2)
 
+        print(
+            "COMPLETION OF SINGLE CLUSTERING {} been clustered ({} out of {}) // Remaining # traces {}".
+            format(progress, log_size - R_size, log_size, len(R))
+        )
         if output:
-            print(
-                "COMPLETION OF SINGLE CLUSTERING {} been clustered ({} out of {}) // Remaining # traces {}".
-                format(progress, log_size - R_size, log_size, len(R))
-            )
+
             print("* dpi(s) in C\n {}".format(C))
             print("* dpi(s) in I\n {}".format(I))
             print("* remainig dpi(s) in R\n {}\n\n\n\n".format(R))
 
-    if output:
-        print("COMPLETION OF WHOLE CLUSTERING\n")
+    print("COMPLETION OF WHOLE CLUSTERING\n")
 
     if N:
-        if output:
-            print(
-                "STEP 3_ since N = 1, all the remaining traces are collected into new single cluster")
+        print(
+            "STEP 3_ since N = 1, all the remaining traces are collected into new single cluster")
         CS.append(R)
     else:
-        if output:
-            print(
-                "STEP 3_ since N = 0, all the remaining traces are moved to the most suitable clusters")
+        print(
+            "STEP 3_ since N = 0, all the remaining traces are moved to the most suitable clusters")
         CS = residual_trace_resolution(R, CS, log, output=output)
     return CS
