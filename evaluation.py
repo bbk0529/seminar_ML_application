@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import pickle
 from pm4py.algo.filtering.log.variants import variants_filter
 
@@ -16,15 +17,63 @@ import matplotlib.pyplot as plt
 from active_clustering import *
 from clustering_util import *
 
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
-def visualize_evaluation(result):
+
+def func(x, a, b, c):
+    return a * np.exp(-b * x) + c
+
+
+def distribution_fitting(d, filename):
+
+    xdata = np.array([i for i in range(len(d))])
+
+    popt, pcov = curve_fit(func, xdata, d)
+    print(popt)
+    plt.figure(figsize=(10, 5))
+    plt.title(filename[6:-4])
+    plt.plot(xdata, func(xdata, *popt), 'g--',
+             label='fit: a=%5.3f, b=%5.3f, c=%5.3f' % tuple(popt))
+    plt.plot(d, color='gray')
+
+
+def dpi_distribution(log):
+    '''
+    input : event log object - log
+    output : numpy array d
+    '''
+
+    import matplotlib.pyplot as plt
+    from pm4py.statistics.traces.log import case_statistics
+    variants_count = case_statistics.get_variant_statistics(log)
+    variants_count = sorted(
+        variants_count, key=lambda x: x['count'], reverse=True)
+    d = np.zeros(len(variants_count))
+    for i, v in enumerate(variants_count):
+        d[i] = (v['count'])
+    d = np.array(d)
+    return d
+
+
+def distribution_plot(d, filename=''):
+    plt.figure(figsize=((10, 5)))
+    plt.bar(range(len(d)), d/sum(d))
+    plt.title(filename[6:-4])
+    plt.plot(d/sum(d))
+    plt.plot(np.cumsum(d)/sum(d), color='gray')
+
+    return d
+
+
+def visualize_evaluation(result, title=''):
 
     labels = ['Fit', 'Pre', 'gen', 'simp']
 
     x = np.arange(len(labels))  # the label locations
     width = 0.2  # the width of the bars
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 6))
     rects1 = ax.bar(x - 3/2 * width, result[0], width, label='Active Tracing')
     rects2 = ax.bar(x - 1/2 * width,
                     result[1], width, label='boa', color='gray')
@@ -35,12 +84,11 @@ def visualize_evaluation(result):
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Scores')
-    ax.set_title('Scores by group and gender')
+    if title != '':
+        ax.set_title(title)
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend()
-
-    fig.tight_layout()
 
     plt.show()
 
@@ -55,7 +103,7 @@ def quality_measure(log, CS):
         eval.append(evaluation_w_hm(l))
 
     DATA = np.array(eval)
-    print(DATA)
+    # print(DATA)
     metrics = []
     for i in range(1, DATA.shape[1]):
         metrics.append(
@@ -63,25 +111,29 @@ def quality_measure(log, CS):
                 DATA[:, 0] * DATA[:, i]
             )/sum(DATA[:, 0])
         )
-    print(
-        "fitness:{}, prec:{}, gen:{}, simp:{}, weighted by # traces".
-        format(metrics[0], metrics[1], metrics[2], metrics[3])
-    )
+    # print(
+    #     "fitness:{}, prec:{}, gen:{}, simp:{}, weighted by # traces".
+    #     format(metrics[0], metrics[1], metrics[2], metrics[3])
+    # )
     return metrics
 
 
 def evaluation_w_hm(log):
-    print("evaluation_w_hm() called")
+    # print("evaluation_w_hm() called")
     net, im, fm = heuristics_miner.apply(log)
+    # print("herusitic miner performed with the given log")
 
     # net, im, fm = inductive_miner.apply(log)
-
     fitness = replay_fitness_evaluator.apply(
         log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)['log_fitness']
+    # print("fitness", fitness)
     prec = precision_evaluator.apply(
         log, net, im, fm, variant=precision_evaluator.Variants.ETCONFORMANCE_TOKEN)
+    # print("pecision", prec)
     gen = generalization_evaluator.apply(log, net, im, fm)
+    # print('generality',gen)
     simp = simplicity_evaluator.apply(net)
+    # print('simplicity',simp)
 
     return [len(log), fitness, prec, gen, simp]
 
@@ -112,9 +164,10 @@ def total_clustering(
     # log, VARIANT = read_xes(filename, p=p)
     # pickle.dump(log, open('log.p', 'wb'))
     # pickle.dump(VARIANT, open('VARIANT.p', 'wb'))
+
+    start_act = time.time()
     if output:
         print("* active clustering started, it may take some time to finish. to see the progress, please use output = True")
-
     CS_act = A_clustering(
         log, VARIANT,
         w=w,  tf=tf, nb_clus=k, mcs=mcs,
@@ -125,6 +178,9 @@ def total_clustering(
 
     if output:
         print("* active clustering finished")
+
+    end_act = time.time()
+    print(end_act - start_act)
 
     if output:
         print("* BOA clustering finished")
@@ -144,7 +200,7 @@ def total_clustering(
     if output:
         print("* ngram clustering finished")
 
-    pickle.dump(CS_act, open("CS_act.p", "wb"))
-    pickle.dump(CS_boa, open("CS_boa.p", "wb"))
-    pickle.dump(CS_mra, open("CS_mra.p", "wb"))
-    pickle.dump(CS_ngram, open("CS_ngram.p", "wb"))
+    pickle.dump(CS_act, open("CS_act" + filename + ".p", "wb"))
+    pickle.dump(CS_boa, open("CS_boa" + filename + ".p", "wb"))
+    pickle.dump(CS_mra, open("CS_mra" + filename + ".p", "wb"))
+    pickle.dump(CS_ngram, open("CS_ngram" + filename + ".p", "wb"))

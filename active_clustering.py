@@ -21,73 +21,65 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
     print("\nClustering() is called. mcs:{}, tf:{}, w:{}".format(mcs, tf, w))
     while (len(R) > 0 and set(R) != set(I)):  # line 8
         print("*"*100)
-        print("START OF {}th LOOP with cur_dpi".format(loop))
+        print("{}th LOOP with cur_dpi".format(loop))
 
         loop += 1
         if w:
             W = W_creater(log, list(set(R) - set(I)), w, output)
         else:  # if w is 0, frequency based selective search
-            if output:
-                print(
-                    "\n * As w is set 0, it searches the most frequent dpi from R_ActiTracC_freq")
-            W = [R[0]]  # W is just a single dpi with the highest freuqency
-
+            print(
+                "\n * As w is set 0, it searches the most frequent dpi from R_ActiTracC_freq")
+            for r in R:
+                if r not in I:
+                    W = [r]  # W is just a single dpi with the highest freuqency
+                    break
         if (len(C) == 0):  # if C is empty set
             cur_dpi = R[0]  # R is already sorted in increasing order.
-            if output:
-                print(
-                    "\n * C is empty set - size of |C|:{} ->  R[0] or  is to be added.\n".format(len(C), len(W)))
+            print(
+                "\n * C is empty set - size of |C|:{} ->  R[0] or  is to be added.\n".format(len(C), len(W)))
 
         elif len(C) > 0 and (len(W) == 1):
             cur_dpi = W[0]
-            if output:
-                print(
-                    "\n * C is not empty set, but |W| = 1. |C|:{}, |W|:{} ->  W[0] or  is to be added.\n".format(len(C), len(W)))
+            print(
+                "\n * C is not empty set, but |W| = 1. |C|:{}, |W|:{} ->  W[0] or  is to be added.\n".format(len(C), len(W)))
 
         else:
-            if output:
-                print(
-                    "\n * C is not empty set and W is larger than 1, so w in W to be selected with min_dist")
+            print(
+                "\n * C is not empty set and W is larger than 1, so w in W to be selected with min_dist")
             cur_dpi = dpi_finder(C, W, output=output)
 
-        if output:
-            print("\tcur_dpi = R[0] {}...\n\n".format(cur_dpi[:40]))
+        # print("\tcur_dpi = R[0] {}...\n\n".format(cur_dpi[:40]))
         # print("\n * Fitness check to be done with cur_dpi\n\t {}...".format(cur_dpi[:80]))
-        if output:
-            print("\n * Fitness check to be done with cur_dpi\n\t {}...".format(cur_dpi))
+        print("\n * Fitness check to be done with cur_dpi\n\t {}...".format(cur_dpi))
 
         if len(C) == 0:  # there was a situation that fitness of
             fit = 1
-            if output:
-                print(
-                    "\n * size of C is 0, fitness check is skipped and cur_dpi is added to C")
+            print(
+                "\n * size of C is 0, fitness check is skipped and cur_dpi is added to C")
         else:
             fit = fit_check_w_HM(log, cur_dpi, C)
 
         if fit >= tf:
             R.remove(cur_dpi)
             C.append(cur_dpi)  # added to C
-            if output:
-                print(
-                    "\n * CASE of fit {} >= {} tf -> Cur_dpi is added to cluster C & removed from R\n\t" .
-                    format(round(fit, 2), tf)
-                )
+            print(
+                "\n * CASE of fit {} >= {} tf -> Cur_dpi is added to cluster C & removed from R\n\t" .
+                format(round(fit, 2), tf)
+            )
 
             if visual:
                 visualization(log, C)
 
         else:  # if fit < tf
-            if output:
-                print(
-                    "\n * CASE of fit {} < {} tf -> fitness dropped than the tf".format(fit, tf))
+            print(
+                "\n * CASE of fit {} < {} tf -> fitness dropped than the tf".format(fit, tf))
             C_size = len(variants_filter.apply(log, C))
             R_size = len(variants_filter.apply(log, R))
             if C_size >= mcs * R_size:
-                if output:
-                    print(
-                        "\t - CASE of |C| {} >= {} mcs * |R| -> look_ahead is called, then this clustering is completed".
-                        format(C_size, mcs * R_size)
-                    )
+                print(
+                    "\t - CASE of |C| {} >= {} mcs * |R| -> look_ahead is called, then this clustering is completed".
+                    format(C_size, mcs * R_size)
+                )
                 C, R = look_ahead(log, C, R, output=output)
 
                 if output:
@@ -100,11 +92,10 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
                 return C, R
 
             else:
-                if output:
-                    print(
-                        "\t - CASE of |C|{} <= {} mcs*|R| -> still it need more trace, cur_dpi added to I and the loop continues ".
-                        format(C_size, mcs * R_size)
-                    )
+                print(
+                    "\t - CASE of |C|{} <= {} mcs*|R| -> still it need more trace, cur_dpi added to I and the loop continues ".
+                    format(C_size, mcs * R_size)
+                )
                 I.append(cur_dpi)
                 I = list(set(I))
         print(
@@ -112,12 +103,12 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
             .format(round(fit, 2), len(C), len(R), len(I))
 
         )
-        if output:
+        # if output:
 
-            print("* dpi(s) in C\n {}".format(C))
-            print("* dpi(s) in I\n {}".format(I))
-            print("* remainig dpi(s) in R\n {}".format(R))
-            print("\n")
+        #     print("* dpi(s) in C\n {}".format(C))
+        #     print("* dpi(s) in I\n {}".format(I))
+        #     print("* remainig dpi(s) in R\n {}".format(R))
+        #     print("\n")
 
     return C, R
 
@@ -130,8 +121,8 @@ def residual_trace_resolution(R, CS, log, output=False):
         fit_max = 0
         fit_max_idx = -1
         for i in range(len(CS)):
-            C_log = variants_filter.apply(log, CS[i])
-            r_log = variants_filter.apply(log, r)
+            C_log = variants_filter.apply(log, [CS[i]])
+            r_log = variants_filter.apply(log, [r])
             net, im, fm = heuristics_miner.apply(C_log)
             # net, im, fm = inductive_miner.apply(C_log)
 
@@ -157,7 +148,8 @@ def A_clustering(
     R = VARIANT.copy()
     CS = []
     for i in range(nb_clus-N):
-        print("#"*100)
+        if output:
+            print("#"*100)
         print("START OF No. {} CLUSTERING\n".format(i+1))
         C = []
         I = []
@@ -177,11 +169,11 @@ def A_clustering(
             "COMPLETION OF SINGLE CLUSTERING {} been clustered ({} out of {}) // Remaining # traces {}".
             format(progress, log_size - R_size, log_size, len(R))
         )
-        if output:
+        # if output:
 
-            print("* dpi(s) in C\n {}".format(C))
-            print("* dpi(s) in I\n {}".format(I))
-            print("* remainig dpi(s) in R\n {}\n\n\n\n".format(R))
+        #     print("* dpi(s) in C\n {}".format(C))
+        #     print("* dpi(s) in I\n {}".format(I))
+        # print("* remainig dpi(s) in R\n {}\n\n\n\n".format(R))
 
     print("COMPLETION OF WHOLE CLUSTERING\n")
 

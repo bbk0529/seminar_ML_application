@@ -20,19 +20,19 @@ def W_creater(log, R, w, output=False):
     log = variants_filter.apply(log, R)
     target_size = len(log) * w  # it determines the size of W
     variant = case_statistics.get_variant_statistics(log)
-    # variant = sorted(variant, key=lambda x: x['count'], reverse=True)
+    variant = sorted(variant, key=lambda x: x['count'], reverse=True)
     if output:
         print("="*100, "\nW creater called with w : {} and target size {}\n".format(w, target_size))
     W_size = 0
     for v in variant:
         W_size += v['count']
         W.append(v['variant'])
-        # if output:
-        #     print(
-        #         "\t\t{}___added with size {} // {} out of {}  // total size : {}".
-        #         format(v['variant'][:60], v['count'],
-        #                W_size, target_size, len(log))
-        #     )
+        if output:
+            print(
+                "\t\t{}___added with size {} // {} out of {}  // total size : {}".
+                format(v['variant'][:60], v['count'],
+                       W_size, target_size, len(log))
+            )
 
         if W_size > target_size:
             break
@@ -61,10 +61,10 @@ def dpi_finder(C, W, output=False):
 
         for c in C:
             c_mr = discover_maximal_repeat(c.split(','))
-            # if output:
-            #     print("\t original w:{} c:{} ".format(w, c))
-            #     print(
-            #         "\t\t correspnding maximal repeat in w:{} c:{} ".format(w_mr, c_mr))
+            if output:
+                print("\t original w:{} c:{} ".format(w, c))
+                print(
+                    "\t\t correspnding maximal repeat in w:{} c:{} ".format(w_mr, c_mr))
             sum_dist += dist_btw_set(w_mr, c_mr)
 
         if sum_dist / len(C) < min_avg_dist:
@@ -88,13 +88,13 @@ def look_ahead(log: list, C, R, output=False):
     # net, im, fm = inductive_miner.apply(C_log)
     for i, r in enumerate(R):
         if i % 10 == 0:
-            if output:
-                print("\t = {} dpi(s) checked".format(i))
-        r_log = variants_filter.apply(log, r)
+            print("\t = {} dpi(s) checked".format(i))
+        r_log = [variants_filter.apply(log, [r])[0]]
         fit = replay_fitness_evaluator.apply(
             r_log, net, im, fm, variant=replay_fitness_evaluator.Variants.TOKEN_BASED)
 
         if fit == 1:
+            print("fitness:", fit)
             if output:
                 print("\tFound a perfect fitness - {}".format(r))
             R.remove(r)

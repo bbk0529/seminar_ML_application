@@ -109,15 +109,21 @@ def read_xes(filename, p=1, n_DPI=False):
     log = xes_importer.apply(filename)
     if p < 1:
         log = variants_filter.filter_log_variants_percentage(log, percentage=p)
-    variants = variants_filter.get_variants(log)
-    VARIANT = list(variants.keys())
+    # variants = variants_filter.get_variants(log)
+    variants = case_statistics.get_variant_statistics(log)
+    # #
+    VARIANT = []
+    for v in variants:
+        VARIANT.append(v['variant'])
+    #
+    # VARIANT = list(variants.keys())
 
     if n_DPI:
         VARIANT = VARIANT[:n_DPI]
         log = variants_filter.apply(log, VARIANT)
     print(
         '='*100,
-        '\n=READ THE XES FILE'
+        '\n=READ THE XES FILE\n'
         'length of log', len(log),
         '\nlength of event', sum(len(trace) for trace in log),
         '\nnumber of variants : {}'.format(len(VARIANT))
