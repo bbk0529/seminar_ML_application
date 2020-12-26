@@ -7,7 +7,7 @@ import sys
 
 
 if __name__ == "__main__":
-    k = 4
+    k = 3
     output = False
     visual = False
     w = 0.25
