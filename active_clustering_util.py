@@ -14,6 +14,29 @@ import clustering_util
 importlib.reload(clustering_util)
 
 
+def MR_creator(VARIANT):
+    '''
+    INPUT : VARIANT
+    output : MAXIMAL REPEAT in the list
+
+    '''
+    concatenated_log = []
+    for trace in VARIANT:
+        sequence = [event for event in trace.split(',')]
+        sequence.append('|')
+        concatenated_log += sequence
+
+    return discover_maximal_repeat(concatenated_log)
+
+
+def MRA_creator(mr):
+    mra = set()
+    for r in mr:
+        for a in r.split(','):
+            mra.add(a)
+    return mra
+
+
 def W_creater(log, R, w, output=False):
 
     W = []
@@ -52,32 +75,22 @@ def min_distance_seeker(dpi, C):
     return min_dpi
 
 
-def dpi_finder(C, W, output=False):
-    # arbitrary big number / dist cannot be larger than the number of all activities
-    min_avg_dist = 9999
-    for w in W:
-        sum_dist = 0
-        w_mr = discover_maximal_repeat(w.split(','))
+def dpi_finder(C, W, mra, output=False):
+    C_in_mra = []
+    for v in C:
+        C_in_mra.append(mra.intersection(set(v.split(','))))
 
-        for c in C:
-            c_mr = discover_maximal_repeat(c.split(','))
-            if output:
-                print("\t original w:{} c:{} ".format(w, c))
-                print(
-                    "\t\t correspnding maximal repeat in w:{} c:{} ".format(w_mr, c_mr))
-            sum_dist += dist_btw_set(w_mr, c_mr)
+    W_in_mra = []
+    for v in W:
+        W_in_mra.append(mra.intersection(set(v.split(','))))
 
-        if sum_dist / len(C) < min_avg_dist:
-            min_avg_dist = sum_dist / len(C)
-            cur_dpi = w
-            if output:
-                print("\tUPDATED cur_dpi in the loop|",
-                      cur_dpi[:40], "\t", min_avg_dist)
-
-    if output:
-        print(
-            "\n * Selected dpi via dpi_finder() :\n\t{}... with dist {}".format(cur_dpi[:60], min_avg_dist))
-    return cur_dpi
+    dist_mat = np.zeros((len(W_in_mra), len(C_in_mra)))
+    for w_idx, w in enumerate(W_in_mra):
+        for c_idx, c in enumerate(C_in_mra):
+            dist_mat[w_idx, c_idx] = dist_btw_set(w, c)
+    idx = np.argmin(np.sum(dist_mat, axis=1))
+    print(np.sum(dist_mat, axis=1))
+    return W[idx]
 
 
 def look_ahead(log: list, C, R, output=False):

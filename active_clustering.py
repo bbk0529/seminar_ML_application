@@ -16,8 +16,9 @@ importlib.reload(clustering_util)
 logging.basicConfig(filename='example.log', level=logging.DEBUG)
 
 
-def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
+def clustering(C, I, R, log, mra, mcs, tf, w, visual=False, output=False):
     loop = 1
+
     print("\nClustering() is called. mcs:{}, tf:{}, w:{}".format(mcs, tf, w))
     while (len(R) > 0 and set(R) != set(I)):  # line 8
         print("*"*100)
@@ -46,7 +47,7 @@ def clustering(C, I, R, log, mcs, tf, w, visual=False, output=False):
         else:
             print(
                 "\n * C is not empty set and W is larger than 1, so w in W to be selected with min_dist")
-            cur_dpi = dpi_finder(C, W, output=output)
+            cur_dpi = dpi_finder(C, W, mra, output=output)
 
         # print("\tcur_dpi = R[0] {}...\n\n".format(cur_dpi[:40]))
         # print("\n * Fitness check to be done with cur_dpi\n\t {}...".format(cur_dpi[:80]))
@@ -145,6 +146,7 @@ def A_clustering(
     visual=False
 
 ):
+    mra = MRA_creator(MR_creator(VARIANT))
     R = VARIANT.copy()
     CS = []
     for i in range(nb_clus-N):
@@ -155,7 +157,7 @@ def A_clustering(
         I = []
         C, R = clustering(
             C, I, R,
-            log, mcs, tf, w,
+            log, mra, mcs, tf, w,
             visual=visual,
             output=output
         )
