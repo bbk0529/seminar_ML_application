@@ -11,6 +11,7 @@ if __name__ == "__main__":
     output = False
     visual = False
     w = 0.25
+    # w = 0
     tf = 1
     mcs = 0.25
     N = 1

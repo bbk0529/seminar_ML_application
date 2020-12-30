@@ -89,8 +89,9 @@ def dpi_finder(C, W, mra, output=False):
         for c_idx, c in enumerate(C_in_mra):
             dist_mat[w_idx, c_idx] = dist_btw_set(w, c)
     idx = np.argmin(np.sum(dist_mat, axis=1))
-    print(np.sum(dist_mat, axis=1))
-    return W[idx]
+    cur_dpi = W[idx]
+    print(cur_dpi, idx, np.sum(dist_mat, axis=1))
+    return cur_dpi
 
 
 def look_ahead(log: list, C, R, output=False):
